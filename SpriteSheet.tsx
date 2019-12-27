@@ -174,6 +174,7 @@ export default class SpriteSheet extends React.PureComponent {
         fps = 24,
         loop = false,
         resetAfterFinish = false,
+
         onFinish = () => { }
     }) => {
         let { animations } = this.props;

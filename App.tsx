@@ -18,15 +18,24 @@ import GestureRecognizer, { swipeDirections } from 'react-native-swipe-gestures'
 
 export default class App extends React.Component {
     [x: string]: any;
-    
+
     constructor(props) {
         super(props);
         this.time = new Animated.Value(0);
         this.interpolationRanges = {};
-
+        this.cols = 3;
+        this.rows = 4;
         this.idle = require('./assets/idle.png');
         this.jump = require('./assets/jump.png');
         this.sprite = this.idle;
+        this.hits = [
+            { label: "hit1", url: require('./assets/hit1.png'), cols: 2, rows: 3 },
+            { label: "hit2", url: require('./assets/hit2.png'), cols: 3, rows: 3 },
+            { label: "hit3", url: require('./assets/hit3.png'), cols: 3, rows: 4 },
+            { label: "hit4", url: require('./assets/hit4.png'), cols: 3, rows: 3 },
+            { label: "hit5", url: require('./assets/hit5.png'), cols: 3, rows: 5 },
+            { label: "hit6", url: require('./assets/hit6.png'), cols: 3, rows: 3 }
+        ];
     }
     state = {
         loop: true,
@@ -47,13 +56,18 @@ export default class App extends React.Component {
     _onSingleTap = event => {
         //console.log("event.nativeEvent.state: ", event.nativeEvent.state);
         //console.log("State.ACTIVE: ", State.ACTIVE);
-        if (event.nativeEvent.state === State.ACTIVE && !this.state.waittime) {
-            this.setState({ waittime: true });
-            this.play('idle');
-            var _self = this;
-            setTimeout(function () {
-                _self.setState({ waittime: false });
-            }, 500);
+        var _self = this;
+        var hit = this.hits[Math.floor(Math.random() * _self.hits.length)];
+        _self.sprite = hit.url;
+        _self.cols = hit.cols;
+        _self.rows = hit.rows;
+        if (event.nativeEvent.state === State.ACTIVE && !_self.state.waittime) {
+            _self.setState({ waittime: true, loop: false }, () => {
+                _self.play(hit.label);
+                setTimeout(function () {
+                    _self.setState({ waittime: false, loop: false });
+                }, 500);
+            });
         }
     };
     _onDoubleTap = event => {
@@ -62,11 +76,11 @@ export default class App extends React.Component {
         }
     };
 
-    onSwipeUp = event =>  {
+    onSwipeUp = event => {
         console.log("SwipeUp");
         this.sprite = this.jump;
         this.setState({ loop: false }, () => {
-            //this.play('jump');
+            this.play('jump');
         });
     }
 
@@ -84,7 +98,9 @@ export default class App extends React.Component {
     onFinish() {
         console.log("end animation");
         this.sprite = this.idle;
-        this.play('idle');
+        this.setState({ loop: true }, () => {
+            this.play('idle');
+        });
     }
     onSwipe(gestureName, gestureState) {
         const { SWIPE_UP, SWIPE_DOWN, SWIPE_LEFT, SWIPE_RIGHT } = swipeDirections;
@@ -142,8 +158,8 @@ export default class App extends React.Component {
                                         <SpriteSheet
                                             ref={ref => (this.mummy = ref)}
                                             source={this.sprite}
-                                            columns={3}
-                                            rows={4}
+                                            columns={this.cols}
+                                            rows={this.rows}
                                             //height={100} // set either, none, but not both
                                             //width={600}
                                             imageStyle={{ marginTop: -1 }}
@@ -151,8 +167,12 @@ export default class App extends React.Component {
                                                 idle: [0, 1, 3, 4, 6, 7, 9, 10, 2, 5],
                                                 jump: [0, 1, 3, 4, 6, 7, 9, 10, 2, 5, 8],
                                                 walk: [0, 1, 3, 4, 6, 7, 9, 10, 2, 5],
-                                                hit1: [0, 1, 2, 3, 4],
-                                                hit2: [5, 6, 8, 9, 10, 11, 12],
+                                                hit1: [0, 2, 1, 3, 4],
+                                                hit2: [0, 1, 3, 4, 6, 7, 2],
+                                                hit3: [0, 1, 3, 4, 6, 7, 9, 10, 2, 5, 8, 11],
+                                                hit4: [0, 1, 3, 4, 6, 7, 2],
+                                                hit5: [0, 1, 3, 4, 6, 7, 9, 10, 2, 5, 8, 11, 12],
+                                                hit6: [0, 1, 3, 4, 6, 7, 2],
                                                 appear: Array.from({ length: 15 }, (v, i) => i + 18),
                                                 die: Array.from({ length: 21 }, (v, i) => i + 33)
                                             }}
@@ -196,7 +216,7 @@ export default class App extends React.Component {
     }
 
     play = type => {
-        
+
         const { fps, loop, resetAfterFinish } = this.state;
         console.log("play");
         console.log("loop: ", loop);
@@ -206,7 +226,6 @@ export default class App extends React.Component {
             fps: Number(fps),
             loop: loop,
             resetAfterFinish: resetAfterFinish,
-            onLoad: () => this.play('idle'),
             onFinish: () => this.onFinish(),
         });
     };
