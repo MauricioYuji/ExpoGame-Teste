@@ -9,7 +9,7 @@ import {
     KeyboardAvoidingView,
     StyleSheet,
     Image,
-    Animated, Easing
+    Animated, Easing, ImageBackground
 } from 'react-native';
 import SpriteSheet from './SpriteSheet';
 import { TapGestureHandler, RotationGestureHandler, LongPressGestureHandler, State } from 'react-native-gesture-handler';
@@ -23,19 +23,23 @@ export default class App extends React.Component {
         super(props);
         this.time = new Animated.Value(0);
         this.interpolationRanges = {};
-        this.cols = 3;
-        this.rows = 4;
+        this.cols = 4;
+        this.rows = 5;
         this.idle = require('./assets/idle.png');
         this.jump = require('./assets/jump.png');
         this.sprite = this.idle;
         this.hits = [
-            { label: "hit1", url: require('./assets/hit1.png'), cols: 2, rows: 3 },
-            { label: "hit2", url: require('./assets/hit2.png'), cols: 3, rows: 3 },
-            { label: "hit3", url: require('./assets/hit3.png'), cols: 3, rows: 4 },
-            { label: "hit4", url: require('./assets/hit4.png'), cols: 3, rows: 3 },
-            { label: "hit5", url: require('./assets/hit5.png'), cols: 3, rows: 5 },
-            { label: "hit6", url: require('./assets/hit6.png'), cols: 3, rows: 3 }
+            { label: "hit1", url: require('./assets/hit1.png') },
+            { label: "hit2", url: require('./assets/hit2.png') },
+            { label: "hit3", url: require('./assets/hit3.png') },
+            { label: "hit4", url: require('./assets/hit4.png') },
+            { label: "hit5", url: require('./assets/hit5.png') },
+            { label: "hit6", url: require('./assets/hit6.png') }
         ];
+    }
+
+    componentDidMount() {
+        this.play('idle');
     }
     state = {
         loop: true,
@@ -59,14 +63,9 @@ export default class App extends React.Component {
         var _self = this;
         var hit = this.hits[Math.floor(Math.random() * _self.hits.length)];
         _self.sprite = hit.url;
-        _self.cols = hit.cols;
-        _self.rows = hit.rows;
         if (event.nativeEvent.state === State.ACTIVE && !_self.state.waittime) {
             _self.setState({ waittime: true, loop: false }, () => {
                 _self.play(hit.label);
-                setTimeout(function () {
-                    _self.setState({ waittime: false, loop: false });
-                }, 500);
             });
         }
     };
@@ -98,7 +97,7 @@ export default class App extends React.Component {
     onFinish() {
         console.log("end animation");
         this.sprite = this.idle;
-        this.setState({ loop: true }, () => {
+        this.setState({ loop: true, waittime: false }, () => {
             this.play('idle');
         });
     }
@@ -122,6 +121,7 @@ export default class App extends React.Component {
     }
 
     render() {
+
         const { fps, loop, resetAfterFinish, animationType } = this.state;
         let {
             translateY = { in: [0, 0], out: [0, 2000] },
@@ -133,85 +133,73 @@ export default class App extends React.Component {
             directionalOffsetThreshold: 80
         };
         return (
-            <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
-                <SafeAreaView style={{ flex: 1 }}>
-                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                        <GestureRecognizer
-                            onSwipe={this.onSwipe}
-                            onSwipeUp={this.onSwipeUp}
-                            onSwipeDown={this.onSwipeDown}
-                            onSwipeLeft={this.onSwipeLeft}
-                            onSwipeRight={this.onSwipeRight}
-                            config={config}
-                            style={{
-                                flex: 1,
-                                backgroundColor: this.state.backgroundColor
-                            }}
-                        >
-                            <LongPressGestureHandler
-                                onHandlerStateChange={this._onHandlerStateChange}
-                                minDurationMs={800}>
-                                <TapGestureHandler
-                                    onHandlerStateChange={this._onSingleTap}
-                                    waitFor={this.doubleTapRef}>
-                                    <View style={styles.box}>
-                                        <SpriteSheet
-                                            ref={ref => (this.mummy = ref)}
-                                            source={this.sprite}
-                                            columns={this.cols}
-                                            rows={this.rows}
-                                            //height={100} // set either, none, but not both
-                                            //width={600}
-                                            imageStyle={{ marginTop: -1 }}
-                                            animations={{
-                                                idle: [0, 1, 3, 4, 6, 7, 9, 10, 2, 5],
-                                                jump: [0, 1, 3, 4, 6, 7, 9, 10, 2, 5, 8],
-                                                walk: [0, 1, 3, 4, 6, 7, 9, 10, 2, 5],
-                                                hit1: [0, 2, 1, 3, 4],
-                                                hit2: [0, 1, 3, 4, 6, 7, 2],
-                                                hit3: [0, 1, 3, 4, 6, 7, 9, 10, 2, 5, 8, 11],
-                                                hit4: [0, 1, 3, 4, 6, 7, 2],
-                                                hit5: [0, 1, 3, 4, 6, 7, 9, 10, 2, 5, 8, 11, 12],
-                                                hit6: [0, 1, 3, 4, 6, 7, 2],
-                                                appear: Array.from({ length: 15 }, (v, i) => i + 18),
-                                                die: Array.from({ length: 21 }, (v, i) => i + 33)
-                                            }}
-                                        />
-                                    </View>
-                                </TapGestureHandler>
-                            </LongPressGestureHandler>
-                        </GestureRecognizer>
-                    </View>
-                    <View style={{ paddingVertical: 30, paddingHorizontal: 30 }}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
-                            <Button onPress={() => this.play('walk')} title="Soco" />
-                            <Button onPress={() => this.play('appear')} title="appear" />
-                            <Button onPress={() => this.play('die')} title="die" />
-                            <Button onPress={this.stop} title="stop" />
-                        </View>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Text style={{ fontSize: 16, marginRight: 10 }}>FPS</Text>
-                            <TextInput
-                                style={{ flex: 1, borderBottomWidth: 1, fontSize: 16 }}
-                                value={fps}
-                                keyboardType="number-pad"
-                                onChangeText={fps => this.setState({ fps })}
-                            />
-                        </View>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Text style={{ fontSize: 16, marginRight: 10 }}>Loop</Text>
-                            <Switch value={loop} onValueChange={loop => this.setState({ loop })} />
-                        </View>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Text style={{ fontSize: 16, marginRight: 10 }}>Reset After Finish</Text>
-                            <Switch
-                                value={resetAfterFinish}
-                                onValueChange={val => this.setState({ resetAfterFinish: val })}
-                            />
-                        </View>
-                    </View>
-                </SafeAreaView>
-            </KeyboardAvoidingView>
+            <View style={{
+                flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%', width: '100%', overflow: 'hidden', backgroundColor: '#000'
+            }}>
+                <View style={{
+                    flexDirection: 'column', justifyContent: 'center', alignItems: 'center', maxHeight: 500, height: '100%', width: '100%', overflow: 'hidden', backgroundColor: '#000'
+                }}>
+                    <ImageBackground source={require('./assets/ken-stage.gif')} style={{ height: '100%', width: '100%', backgroundColor: '#F00' }} >
+                        <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+                            <SafeAreaView style={{ flex: 1 }}>
+                                <GestureRecognizer
+                                    onSwipe={this.onSwipe}
+                                    onSwipeUp={this.onSwipeUp}
+                                    onSwipeDown={this.onSwipeDown}
+                                    onSwipeLeft={this.onSwipeLeft}
+                                    onSwipeRight={this.onSwipeRight}
+                                    config={config}
+                                    style={{
+                                        flex: 1,
+                                        backgroundColor: this.state.backgroundColor
+                                    }}
+                                >
+                                    <LongPressGestureHandler
+                                        onHandlerStateChange={this._onHandlerStateChange}
+                                        minDurationMs={800}>
+                                        <TapGestureHandler
+                                            onHandlerStateChange={this._onSingleTap}
+                                            waitFor={this.doubleTapRef}>
+
+                                            <View style={styles.box}>
+                                                <SpriteSheet
+                                                    ref={ref => (this.mummy = ref)}
+                                                    source={this.sprite}
+                                                    columns={this.cols}
+                                                    rows={this.rows}
+                                                    //height={100} // set either, none, but not both
+                                                    width={800}
+                                                    imageStyle={{ marginTop: -1 }}
+                                                    animations={{
+                                                        idle: Array.from({ length: 10 }, (v, i) => i + 0),
+                                                        jump: Array.from({ length: 11 }, (v, i) => i + 0),
+                                                        walk: Array.from({ length: 10 }, (v, i) => i + 0),
+                                                        hit1: Array.from({ length: 5 }, (v, i) => i + 0),
+                                                        hit2: Array.from({ length: 7 }, (v, i) => i + 0),
+                                                        hit3: Array.from({ length: 11 }, (v, i) => i + 0),
+                                                        hit4: Array.from({ length: 7 }, (v, i) => i + 0),
+                                                        hit5: Array.from({ length: 7 }, (v, i) => i + 0),
+                                                        hit6: Array.from({ length: 13 }, (v, i) => i + 0),
+                                                        appear: Array.from({ length: 15 }, (v, i) => i + 18),
+                                                        die: Array.from({ length: 21 }, (v, i) => i + 33)
+                                                    }}
+                                                />
+                                                <View style={styles.lifebox}>
+                                                    <ImageBackground source={require('./assets/life-box.png')} style={{ height: '100%', width: '100%', paddingHorizontal: 20 }} >
+                                                        <View style={{ width: 240, overflow: 'hidden' }}>
+                                                            <Image source={require('./assets/life.png')} style={{ height: '100%', width: '100%' }} />
+                                                        </View>
+                                                    </ImageBackground>
+                                                </View>
+                                            </View>
+                                        </TapGestureHandler>
+                                    </LongPressGestureHandler>
+                                </GestureRecognizer>
+                            </SafeAreaView>
+                        </KeyboardAvoidingView>
+                    </ImageBackground>
+                </View>
+            </View>
         );
     }
 
@@ -240,7 +228,16 @@ const styles = StyleSheet.create({
     scrollView: {
         flex: 1,
     },
+    lifebox: {
+        position: 'absolute',
+        left: 0,
+        bottom: 0,
+        height: 100,
+        width: 300,
+        marginLeft: -20
+    },
     box: {
-        zIndex: 200,
+        flex: 1, justifyContent: 'center', alignItems: 'center',
+        zIndex: 200
     },
 });
